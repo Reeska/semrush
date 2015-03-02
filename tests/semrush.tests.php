@@ -3,7 +3,7 @@ require_once __DIR__.'/../vendor/autoload.php';
 
 use Reeska\Semrush\SemrushAPI;
 
-$semrush = new SemrushAPI('api_key');
+$semrush = new SemrushAPI('f2a1f52b032f1a3dba3067900cfcbdd6');
 
 try {
 	$results = $semrush->organicSearchKeywords('github.com');
