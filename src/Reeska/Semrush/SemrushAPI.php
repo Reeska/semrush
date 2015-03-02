@@ -1,25 +1,26 @@
 <?php
+namespace Reeska\Semrush;
 
-class SemrushApi {
+class SemrushAPI {
 	private static $endpoint = 'http://api.semrush.com';
 	private static $options = array(
 		'domain_organic' => array(
-			'domain',
+			'domain' => '',
 			'database' => 'fr',
 			'display_limit' => 5, 	/* 10000 */
 			'display_offset' => 0,
 			'export_escape' => 1, 	/* 0: protect by ", 1: no protect */
 			'export_decode' => 1, 	/* 0: url encoded, 1: no encoding */
-			'display_date', 		/* format YYYYMM15 */
+			'display_date' => '', 		/* format YYYYMM15 */
 			'export_columns' => 'Ph,Po,Pp,Pd,Nq,Cp,Ur,Tr,Tc,Co,Nr,Td', /* Ph, Po, Pp, Pd, Nq, Cp, Ur, Tr, Tc, Co, Nr, Td */
-			'display_sort', 		/* sort by tr_asc, tr_desc, po_asc, po_desc, tc_asc, tc_desc */
-			'display_positions', 	/* new, lost, rise ou fall */
-			'display_filter' 		/* <sign>|<field>|<operation>|<value> */
+			'display_sort' => '', 		/* sort by tr_asc, tr_desc, po_asc, po_desc, tc_asc, tc_desc */
+			'display_positions' => '', 	/* new, lost, rise ou fall */
+			'display_filter' => ''		/* <sign>|<field>|<operation>|<value> */
 		),
 		'domain_ranks' => array(
-			'domain',
+			'domain' => '',
 			'database' => 'fr',
-			'display_date',
+			'display_date' => '',
 			'export_columns' => 'Db,Dn,Rk,Or,Ot,Oc,Ad,At,Ac'
 		)
 	);
@@ -111,10 +112,10 @@ class SemrushApi {
 	
 	private $key;
 	
-	public function SemrushApi($key) {
+	public function __construct($key) {
 		$this->key = $key;
 	}
-	
+
 	/**
 	 * Do an domain organic search keywords.
 	 * @param string|array $params Domain or multiple params.
@@ -125,7 +126,7 @@ class SemrushApi {
 			$params = array('domain' => $params);
 		}
 		
-		return $this->request('domain_organic', $params, 'DomainOrganicResult');
+		return $this->request('domain_organic', $params, DomainOrganicResultFactory::instance());
 	}
 	
 	/**
@@ -138,7 +139,7 @@ class SemrushApi {
 			$params = array('domain' => $params);
 		}
 
-		return $this->request('domain_ranks', $params, 'DomainRankResult');
+		return $this->request('domain_ranks', $params, DomainRanksResultFactory::instance());
 	}
 	
 	/**
@@ -156,6 +157,11 @@ class SemrushApi {
 			$params
 		);
 		
+		/*
+		 * remove empty params
+		 */
+		$params = array_diff($params, array(''));
+		
 		return http_build_query($params);
 	}
 	
@@ -164,14 +170,17 @@ class SemrushApi {
 	 * @param array $params
 	 * @return multitype:SemrushResult |boolean
 	 */
-	protected function request($type, $params, $class) {
+	protected function request($type, $params, ResultFactory $factory) {
 		$url = self::$endpoint .'/?'. $this->build($type, $params);
 		$ch = curl_init();
 		
 		curl_setopt($ch, CURLOPT_URL, $url);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1 );
 		curl_setopt($ch, CURLOPT_TIMEOUT, 30 );
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-Real-IP', $_SERVER['SERVER_ADDR']));
+		
+		if (isset($_SERVER['SERVER_ADDR'])){
+			curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-Real-IP', $_SERVER['SERVER_ADDR']));
+		}
 		
 		$answer	= curl_exec($ch);
 		
@@ -182,12 +191,10 @@ class SemrushApi {
 		 * Success
 		 */
 		if ($hreturn == 200) {
-			return $this->parse($answer, $params, $class);
+			return $this->parse($answer, $params, $factory);
 		}
 		
-		var_dump($url);
-		var_dump($answer);
-		var_dump($hreturn);
+		throw new \Exception($answer, $hreturn);
 
 		/**
 		 * Error
@@ -201,7 +208,7 @@ class SemrushApi {
 	 * @param array $params Used params for request.
 	 * @return multitype:SemrushResult
 	 */
-	protected function parse($response, $params, $class) {
+	protected function parse($response, $params, ResultFactory $factory) {
 		$result = array();
 		$columns = explode(',', $params['export_columns']);
 		$lines = explode("\n", $response);
@@ -209,7 +216,7 @@ class SemrushApi {
 		unset($lines[0]); // headers
 		
 		foreach($lines as $line) {
-			$result[] = new $class(str_getcsv($line, ";"), $columns);
+			$result[] = $factory->create(str_getcsv($line, ";"), $columns);
 		}
 		
 		return $result;
@@ -231,7 +238,7 @@ class SemrushResult {
 	 * @param array $data
 	 * @param array $columns
 	 */
-	public function SemrushResult($data, $columns) {
+	public function __construct($data, $columns) {
 		$this->data = $data;
 		$this->columns = $columns;
 		$this->rcolumns = array_flip($columns);
@@ -253,7 +260,7 @@ class SemrushResult {
 	 */
 	public function get($column) {
 		if (!in_array($column, $this->columns)) {
-			throw new Exception("No column " + $column + " in this result.");
+			throw new \Exception("No column ". $column ." in this result.");
 			return null;
 		}
 		
@@ -462,4 +469,50 @@ class DomainRankResult extends SemrushResult {
 	public function adwordsCost() {
 		return $this->get(SemrushApi::AC);
 	}	
+}
+
+interface ResultFactory {
+	public function create(array $data, array $column);
+}
+
+class DomainOrganicResultFactory implements ResultFactory {
+	private static $instance = null;
+	
+	/**
+	 * @return DomainOrganicResultFactory
+	 */	
+	public static function instance() {
+		return self::$instance == null ?
+			self::$instance = new DomainOrganicResultFactory():
+			self::$instance;
+	}
+	
+	/**
+	 * Create DomainOrganicResult instance.
+	 * @return DomainOrganicResult
+	 */	
+	public function create(array $data, array $columns) {
+		return new DomainOrganicResult($data, $columns);
+	}
+}
+
+class DomainRanksResultFactory implements ResultFactory {
+	private static $instance = null;
+	
+	/**
+	 * @return DomainRanksResultFactory
+	 */
+	public static function instance() {
+		return self::$instance == null ?
+		self::$instance = new DomainRanksResultFactory():
+		self::$instance;
+	}
+		
+	/**
+	 * Create DomainRankResult instance.
+	 * @return DomainRankResult
+	 */
+	public function create(array $data, array $columns) {
+		return new DomainRankResult($data, $columns);
+	}
 }
