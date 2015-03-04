@@ -40,10 +40,21 @@ class SemrushAPI {
 		)
 	);
 	
+	protected $debug = false;
 	private $key;
 	
 	public function __construct($key) {
 		$this->key = $key;
+	}
+	
+	/**
+	 * Enable or disable showing debug information.
+	 * @param boolean $debug
+	 * @return SemrushAPI
+	 */
+	public function setDebug($debug) {
+		$this->debug = $debug;
+		return $this;
 	}
 	
 	/**
@@ -59,28 +70,45 @@ class SemrushAPI {
 	/**
 	 * Do an domain organic search keywords.
 	 * @param string|array $params Domain or multiple params.
+	 * @param string $date Date to filter results, format: YYYYMM15 (display_date option).
+	 * @param int $maxlength Max result count (display_limit option).
 	 * @return DomainOrganicResult[]
 	 */
-	public function organicSearchKeywords($params) {
-		if (!is_array($params)) {
-			$params = array('domain' => $params);
-		}
-		
-		return $this->request('domain_organic', $params, DomainOrganicResultFactory::instance());
+	public function organicSearchKeywords($params, $date = '', $maxlength = '') {
+		return $this->dispatch('domain_organic', DomainOrganicResultFactory::instance(), $params, $date, $maxlength);
 	}
 	
 	/**
 	 * Do a domain ranks query.
 	 * @param string|array $params Domain or multiple params.
+ 	 * @param string $date Date to filter results, format: YYYYMM15 (display_date option).
+	 * @param int $maxlength Max result count (display_limit option).
 	 * @return DomainRanksResult[]
 	 */
-	public function domainRanks($params) {
-		if (!is_array($params)) {
-			$params = array('domain' => $params);
-		}
-
-		return $this->request('domain_ranks', $params, DomainRanksResultFactory::instance());
+	public function domainRanks($params, $date = '', $maxlength = '') {
+		return $this->dispatch('domain_ranks', DomainRanksResultFactory::instance(), $params, $date, $maxlength);
 	}
+	
+	/**
+	 * Dispatch the request.
+	 * @param string Request type.
+	 * @param ResultFactory $factory Factory to make result instance.
+	 * @param string|array $params Domain or multiple params.
+	 * @param string $date Date to filter results, format: YYYYMM15 (display_date option).
+	 * @param int $maxlength Max result count (display_limit option).
+	 * @return DomainRanksResult[]
+	 */
+	protected function dispatch($type, ResultFactory $factory, $params, $date = '', $maxlength = '') {
+		if (!is_array($params)) {
+			$params = array(
+				'domain' => $params,
+				'display_limit' => $maxlength,
+				'display_date' => $date
+			);
+		}
+	
+		return $this->request($type, $params, $factory);
+	}	
 	
 	/**
 	 * Build params for request.
@@ -107,6 +135,7 @@ class SemrushAPI {
 	
 	/**
 	 * Send a request to Semrush API with this params.
+	 * @param string $type Request type.
 	 * @param array $params
 	 * @return multitype:SemrushResult |boolean
 	 */
@@ -127,6 +156,10 @@ class SemrushAPI {
 		$hreturn = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		$errcode = curl_errno($ch);
 		
+		if ($this->debug) {
+			var_dump($url);
+		}
+		
 		/**
 		 * Success
 		 */
@@ -134,7 +167,7 @@ class SemrushAPI {
 			return $this->parse($answer, $params, $factory);
 		}
 		
-		throw new \Exception($answer, $hreturn);
+		throw new SemrushException($hreturn, $answer, $url);
 
 		/**
 		 * Error
