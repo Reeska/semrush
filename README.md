@@ -6,6 +6,7 @@ Library to easily querying Semrush API. All web services are not implemented yet
 ## Implemented Features
 * Domain Overview (All databases)
 * Domain Organic Search Keywords
+* Domain Overview (History)
 
 ## Download
 
