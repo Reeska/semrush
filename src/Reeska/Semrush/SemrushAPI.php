@@ -6,6 +6,7 @@ use Reeska\Semrush\Factory\DomainOrganicResultFactory;
 use Reeska\Semrush\Factory\DomainRanksResultFactory;
 use Reeska\Semrush\Result\DomainRanksResult;
 use Reeska\Semrush\Result\DomainOrganicResult;
+use Reeska\Semrush\Factory\DomainRankHistoryResultFactory;
 
 /**
  * Semrush Service class to request Semrush API.
@@ -36,6 +37,13 @@ class SemrushAPI {
 			'database' => 'fr',
 			'display_date' => '',
 			'export_columns' => 'Db,Dn,Rk,Or,Ot,Oc,Ad,At,Ac',
+			'export_escape' => 1 	/* 0: no protect, 1: protect by " */
+		),
+		'domain_rank_history' => array(
+			'domain' => '',
+			'database' => 'fr',
+			'display_date' => '',
+			'export_columns' => 'Rk,Or,Ot,Oc,Ad,At,Ac,Dt',
 			'export_escape' => 1 	/* 0: no protect, 1: protect by " */
 		)
 	);
@@ -88,6 +96,25 @@ class SemrushAPI {
 	public function domainRanks($params, $date = '', $maxlength = '') {
 		return $this->dispatch('domain_ranks', DomainRanksResultFactory::instance(), $params, $date, $maxlength);
 	}
+	
+	/**
+	 * Do a domain rank history query.
+	 * @param string|array $params Domain or multiple params.
+	 * @param int $maxlength Max result count (display_limit option).
+	 * @param string $sort Sort order in dt_asc or dt_desc.
+	 * @return DomainRankHistoryResult[]
+	 */
+	public function domainRankHistory($params, $maxlength = '', $sort = 'dt_asc') {
+		if (!is_array($params)) {
+			$params = array(
+					'domain' => $params,
+					'display_limit' => $maxlength,
+					'display_sort' => $sort
+			);
+		}		
+		
+		return $this->dispatch('domain_rank_history', DomainRankHistoryResultFactory::instance(), $params, $date, $maxlength);
+	}	
 	
 	/**
 	 * Dispatch the request.

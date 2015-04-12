@@ -86,4 +86,8 @@ class Constants {
 	 * Estimated budget spent buying keywords in Google AdWords for ads that appear in paid search results (monthly estimation).
 	 */
 	const AC = 'Ac';	
+	/**
+	 * Actual date
+	 */
+	const DT = 'Dt';
 }
