@@ -107,13 +107,13 @@ class SemrushAPI {
 	public function domainRankHistory($params, $maxlength = '', $sort = 'dt_asc') {
 		if (!is_array($params)) {
 			$params = array(
-					'domain' => $params,
-					'display_limit' => $maxlength,
-					'display_sort' => $sort
+				'domain' => $params,
+				'display_limit' => $maxlength,
+				'display_sort' => $sort
 			);
 		}		
 		
-		return $this->dispatch('domain_rank_history', DomainRankHistoryResultFactory::instance(), $params, $date, $maxlength);
+		return $this->dispatch('domain_rank_history', DomainRankHistoryResultFactory::instance(), $params, null, $maxlength);
 	}	
 	
 	/**
