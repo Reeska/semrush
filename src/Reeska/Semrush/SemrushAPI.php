@@ -18,6 +18,7 @@ use Reeska\Semrush\Factory\DomainRankHistoryResultFactory;
  */
 class SemrushAPI {
 	protected static $endpoint = 'http://api.semrush.com';
+	protected static $domain = 'http://www.semrush.com';
 	protected static $options = array(
 		'domain_organic' => array(
 			'domain' => '',
@@ -115,6 +116,21 @@ class SemrushAPI {
 		
 		return $this->dispatch('domain_rank_history', DomainRankHistoryResultFactory::instance(), $params, null, $maxlength);
 	}	
+	
+	/**
+	 * Get current API units for this current account.
+	 * If there is an error to get data, null is returned.
+	 * @return int|NULL
+	 */
+	public function units() {
+		$content = @file_get_contents(self::$domain.'/users/countapiunits.html?key='.$this->key);
+		
+		if (is_numeric($content)) {
+			return $content;
+		}
+		
+		return null;
+	}
 	
 	/**
 	 * Dispatch the request.
