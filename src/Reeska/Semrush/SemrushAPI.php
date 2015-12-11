@@ -18,7 +18,10 @@ use Reeska\Semrush\Factory\DomainRankHistoryResultFactory;
  */
 class SemrushAPI {
 	protected static $endpoint = 'http://api.semrush.com';
-	protected static $domain = 'http://www.semrush.com';
+	protected static $domain = 'http://fr.semrush.com'; 
+	/* target server, because www.semrush.com redirect to and 
+	 * Location header doesn't contains protocol (Location://fr.semrush.com/users/countapiunits.html?key=) 
+	 * so curl follow redirect doesn't works. */
 	protected static $options = array(
 		'domain_organic' => array(
 			'domain' => '',
@@ -123,11 +126,14 @@ class SemrushAPI {
 	 * @return int|NULL
 	 */
 	public function units() {
-		$content = @file_get_contents(self::$domain.'/users/countapiunits.html?key='.$this->key);
+		$response = $this->http(self::$domain.'/users/countapiunits.html?key='.$this->key);
+		$content = $response['response'];
 		
 		if (is_numeric($content)) {
 			return $content;
 		}
+		
+		var_dump($content);
 		
 		return null;
 	}
@@ -175,6 +181,31 @@ class SemrushAPI {
 		
 		return http_build_query($params);
 	}
+	
+	/**
+	 * Send a http request to $url.
+	 * @param string $url 
+	 * @return array Array with response and http_code fields.
+	 */
+	protected function http($url) {
+		$ch = curl_init();
+	
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 30 );
+	
+		if (isset($_SERVER['SERVER_ADDR'])){
+			curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-Real-IP', $_SERVER['SERVER_ADDR']));
+		}
+	
+		$answer	= curl_exec($ch);
+	
+		$hreturn = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		$errcode = curl_errno($ch);
+		
+		return array('response' => $answer, 'http_code' => $hreturn);
+	}	
 	
 	/**
 	 * Send a request to Semrush API with this params.
