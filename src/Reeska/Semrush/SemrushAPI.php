@@ -133,8 +133,6 @@ class SemrushAPI {
 			return $content;
 		}
 		
-		var_dump($content);
-		
 		return null;
 	}
 	
@@ -194,6 +192,7 @@ class SemrushAPI {
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 		curl_setopt($ch, CURLOPT_TIMEOUT, 30 );
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 	
 		if (isset($_SERVER['SERVER_ADDR'])){
 			curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-Real-IP', $_SERVER['SERVER_ADDR']));
@@ -204,7 +203,7 @@ class SemrushAPI {
 		$hreturn = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		$errcode = curl_errno($ch);
 		
-		return array('response' => $answer, 'http_code' => $hreturn);
+		return array('response' => $answer, 'http_code' => $hreturn, 'error' => $errcode);
 	}	
 	
 	/**
