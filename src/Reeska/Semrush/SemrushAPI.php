@@ -52,6 +52,7 @@ class SemrushAPI {
 		)
 	);
 	
+	private $timeout = 60;
 	protected $debug = false;
 	private $key;
 	
@@ -66,6 +67,16 @@ class SemrushAPI {
 	 */
 	public function setDebug($debug) {
 		$this->debug = $debug;
+		return $this;
+	}
+
+	/**
+	 * Set HTTP request timeout (default: 60s)
+	 * @param int $timeout timeout in seconds
+	 * @return SemrushAPI
+	 */
+	public function setTimeout($timeout) {
+		$this->timeout = $timeout;
 		return $this;
 	}
 	
@@ -217,8 +228,8 @@ class SemrushAPI {
 		$ch = curl_init();
 		
 		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1 );
-		curl_setopt($ch, CURLOPT_TIMEOUT, 30 );
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_TIMEOUT, $this->timeout);
 		
 		if (isset($_SERVER['SERVER_ADDR'])){
 			curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-Real-IP', $_SERVER['SERVER_ADDR']));
