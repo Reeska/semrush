@@ -17,8 +17,9 @@ use Reeska\Semrush\Factory\DomainRankHistoryResultFactory;
  * @author Reeska
  */
 class SemrushAPI {
-	protected static $endpoint = 'http://api.semrush.com';
-	protected static $domain = 'https://fr.semrush.com'; 
+	protected static $endpoint = 'https://api.semrush.com';
+	protected static $domain = 'https://fr.semrush.com';
+
 	/* target server, because www.semrush.com redirect to and 
 	 * Location header doesn't contains protocol (Location://fr.semrush.com/users/countapiunits.html?key=) 
 	 * so curl follow redirect doesn't works. */
